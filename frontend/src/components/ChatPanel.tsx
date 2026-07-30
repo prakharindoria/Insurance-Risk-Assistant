@@ -1,57 +1,43 @@
 import { useState } from 'react';
-import { Send, Sparkles, User, Shield, Edit2, Save } from 'lucide-react';
+import { Send, Sparkles, User, Shield } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import api from '../api/api';
+import { parseListItems, parseRiskScore, parseSection } from '../utils/reportContent';
 
 const ChatPanel = () => {
   const [context, setContext] = useState('');
   const [clientName, setClientName] = useState('');
   const [insuranceType, setInsuranceType] = useState('Property Insurance');
-  const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState('');
-  const [editTitle, setEditTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [report, setReport] = useState<any>(null);
 
   const handleGenerate = async () => {
     setLoading(true);
+    setMessage('');
     setReport(null);
-    setIsEditing(false);
     try {
       const url = `/reports/generate?context=${encodeURIComponent(context)}&client_name=${encodeURIComponent(clientName)}&insurance_type=${encodeURIComponent(insuranceType)}`;
       const res = await api.post(url);
       setReport(res.data);
-      setEditContent(res.data.content);
-      setEditTitle(res.data.title);
+      setMessage('Report generated successfully.');
       setContext('');
     } catch (error: any) {
-      setReport({ content: `**Error generating report:**\n${error.response?.data?.detail || error.message}`, title: "Error" });
+      setReport(null);
+      setMessage(`Error generating report: ${error.response?.data?.detail || error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveEdit = async () => {
-    if (!report?.id) return;
-    try {
-      setLoading(true);
-      const res = await api.put(`/reports/${report.id}`, {
-        title: editTitle,
-        content: editContent
-      });
-      setReport(res.data);
-      setIsEditing(false);
-    } catch (error) {
-      alert("Failed to save changes");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const highlights = parseListItems(parseSection(report?.content || '', 'Highlights'));
+  const lowlights = parseListItems(parseSection(report?.content || '', 'Lowlights'));
+  const riskScore = parseRiskScore(report?.content || '');
 
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto pb-48">
-        {!report && !loading && (
+        {!loading && !message && !report && (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 space-y-4">
             <Sparkles size={48} className="text-yellow-500 opacity-50" />
             <div>
@@ -70,41 +56,59 @@ const ChatPanel = () => {
           </div>
         )}
 
-        {report && !loading && (
-          <div className="bg-white/60 p-6 rounded-xl shadow-sm max-w-none">
-            <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-              <h3 className="text-blue-800 font-semibold">{isEditing ? "Editing Report" : report.title}</h3>
-              {!isEditing ? (
-                <button onClick={() => setIsEditing(true)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600">
-                  <Edit2 size={14} /> Edit
-                </button>
-              ) : (
-                <button onClick={handleSaveEdit} className="flex items-center gap-1 text-sm text-white bg-blue-600 px-3 py-1 rounded-md hover:bg-blue-700">
-                  <Save size={14} /> Save
-                </button>
-              )}
+        {!loading && report && (
+          <div className="space-y-4">
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <div className="text-xs uppercase tracking-[0.24em] text-slate-500">Generated report</div>
+                  <h3 className="text-lg font-semibold text-slate-800">{report.title}</h3>
+                </div>
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Live preview</span>
+              </div>
+              <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr_0.9fr]">
+                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                  <div className="text-sm font-semibold text-blue-800 mb-2">Risk Score</div>
+                  <div className="text-3xl font-bold text-slate-900">{riskScore ?? '—'}</div>
+                  <div className="text-sm text-blue-700 mt-1">
+                    {riskScore !== null ? `AI-assessed score from the model response` : 'Scored from AI assessment'}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                  <div className="text-sm font-semibold text-emerald-800 mb-2">Highlights</div>
+                  {highlights.length > 0 ? (
+                    <ul className="list-disc pl-5 space-y-1 text-sm text-emerald-900">
+                      {highlights.map((item, index) => <li key={`highlight-${index}`}>{item}</li>)}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-emerald-700">No highlights were generated yet.</p>
+                  )}
+                </div>
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                  <div className="text-sm font-semibold text-rose-800 mb-2">Lowlights</div>
+                  {lowlights.length > 0 ? (
+                    <ul className="list-disc pl-5 space-y-1 text-sm text-rose-900">
+                      {lowlights.map((item, index) => <li key={`lowlight-${index}`}>{item}</li>)}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-rose-700">No lowlights were generated yet.</p>
+                  )}
+                </div>
+              </div>
             </div>
-            
-            {isEditing ? (
-              <div className="space-y-4">
-                <input 
-                  type="text" 
-                  value={editTitle} 
-                  onChange={(e) => setEditTitle(e.target.value)} 
-                  className="w-full p-2 border rounded-md"
-                  placeholder="Report Title"
-                />
-                <textarea 
-                  value={editContent} 
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full p-2 border rounded-md min-h-[300px] font-mono text-sm"
-                />
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm">
+              <div className="prose prose-sm max-w-none w-full overflow-hidden">
+                <div style={{ overflowWrap: 'anywhere', wordBreak: 'break-word', whiteSpace: 'normal' }}>
+                  <ReactMarkdown>{report.content}</ReactMarkdown>
+                </div>
               </div>
-            ) : (
-              <div className="prose prose-sm">
-                <ReactMarkdown>{report.content}</ReactMarkdown>
-              </div>
-            )}
+            </div>
+          </div>
+        )}
+
+        {!loading && message && !report && (
+          <div className="rounded-3xl border border-blue-200 bg-blue-50 p-6 text-sm text-blue-800 shadow-sm">
+            {message}
           </div>
         )}
       </div>
@@ -139,7 +143,7 @@ const ChatPanel = () => {
           <textarea
             value={context}
             onChange={(e) => setContext(e.target.value)}
-            placeholder="Add context for generation (e.g. 'Focus on environmental risks for coastal property')"
+            placeholder="Add the focus or instructions for the report (e.g. 'Prioritize cyber and operational risks for this client')"
             className="w-full bg-white/50 p-3 pr-12 rounded-xl resize-none outline-none border focus:border-blue-400 text-sm text-gray-800"
             rows={2}
           />

@@ -39,12 +39,12 @@ const DashboardLayout = () => {
          </div>
       </div>
 
-      {/* Studio / Reports (Right) */}
+      {/* Report section (Right) */}
       <div className="w-1/4 h-full flex flex-col glass-panel overflow-hidden">
          <div className="p-4 border-b border-glassBorder flex items-center justify-between bg-white/10">
             <div className="flex items-center gap-2 font-semibold text-gray-800">
               <LayoutDashboard size={20} />
-              <span>Studio & Reports</span>
+              <span>Report section</span>
             </div>
             <button onClick={logout} className="text-gray-500 hover:text-red-500" title="Logout">
               <LogOut size={18} />
