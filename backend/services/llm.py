@@ -1,15 +1,14 @@
 from langchain_openai import ChatOpenAI
-import os
 import httpx
 from core.config import settings
 
 # Initialize LangChain LLM with TCS Endpoint configuration
-# We use verify=False as per the provided code snippet
+# We use verify=False as requested by user snippet, but keys are from environment variables
 client = httpx.Client(verify=False)
 llm = ChatOpenAI(
     base_url="https://genailab.tcs.in",
     model="azure/genailab-maas-gpt-4o",
-    api_key="sk-ZPM8Bjz6MbqU2bCEh7EjOA", # Using the provided key directly as requested, typically would use settings
+    api_key=settings.OPENAI_API_KEY, # Securely fetched from environment/settings
     http_client=client,
     temperature=0.1,
 )

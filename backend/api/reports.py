@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from fastapi.responses import HTMLResponse, FileResponse
 from sqlalchemy.orm import Session
 from core.database import get_db
@@ -15,9 +15,14 @@ import docx
 
 router = APIRouter()
 
+class ReportUpdate(schemas.ReportBase):
+    pass
+
 @router.post("/generate", response_model=schemas.Report)
 def generate_report(
     context: str = "",
+    client_name: str = "",
+    insurance_type: str = "",
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -28,14 +33,15 @@ def generate_report(
     sources_text = "\n\n".join([f"--- Source: {s.filename} ---\n{s.content}" for s in sources])
 
     # Enrich with mock API data
-    cibil = fetch_cibil_score("mock client")
+    cibil = fetch_cibil_score(client_name or "mock client")
     env = fetch_environmental_risk("mock location")
     enriched_data = f"{sources_text}\n\n--- External API Data ---\nCIBIL Score: {cibil}\nEnvironmental Risk: {env}"
 
-    report_content = generate_report_content(enriched_data, context)
+    full_context = f"Client Name: {client_name}\nInsurance Type: {insurance_type}\nUser Instructions: {context}"
+    report_content = generate_report_content(enriched_data, full_context)
 
     db_report = models.Report(
-        title="AI Risk Assessment Report",
+        title=f"{client_name} - {insurance_type} Risk Assessment" if client_name else "AI Risk Assessment Report",
         content=report_content,
         owner_id=current_user.id
     )
@@ -45,9 +51,27 @@ def generate_report(
 
     return db_report
 
+@router.put("/{report_id}", response_model=schemas.Report)
+def update_report(
+    report_id: int,
+    report_update: ReportUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    report = db.query(models.Report).filter(models.Report.id == report_id, models.Report.owner_id == current_user.id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    report.title = report_update.title
+    report.content = report_update.content
+    db.commit()
+    db.refresh(report)
+    return report
+
 @router.get("/", response_model=list[schemas.Report])
 def get_reports(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    return db.query(models.Report).filter(models.Report.owner_id == current_user.id).all()
+    # Return reports ordered by created_at desc to show newest first
+    return db.query(models.Report).filter(models.Report.owner_id == current_user.id).order_by(models.Report.created_at.desc()).all()
 
 @router.get("/{report_id}/export/html", response_class=HTMLResponse)
 def export_html(report_id: int, db: Session = Depends(get_db)):
@@ -71,10 +95,12 @@ def export_pdf(report_id: int, db: Session = Depends(get_db)):
     textobject.setTextOrigin(10, 730)
     textobject.setFont("Helvetica", 10)
 
-    # Very basic PDF generation
     lines = report.content.split('\n')
     for line in lines:
-        textobject.textLine(line)
+        import textwrap
+        wrapped_lines = textwrap.wrap(line, width=100)
+        for w_line in wrapped_lines:
+            textobject.textLine(w_line)
     c.drawText(textobject)
     c.save()
 
