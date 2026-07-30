@@ -5,10 +5,10 @@ pydantic
 pydantic-settings
 python-multipart
 python-jose[cryptography]
-passlib[bcrypt]
-bcrypt<4.0.0
+bcrypt
 openai
 reportlab
 python-docx
 markdown
-langchain_openai\nhttpx
+langchain_openai
+httpx
