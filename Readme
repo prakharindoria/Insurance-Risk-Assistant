@@ -13,3 +13,12 @@ uvicorn main:app --reload
 cd frontend
 npm install
 npm run dev
+
+
+Insurance Risk Assessment Report Generator Using Generative AI
+PROBLEM STATEMENT
+Insurance underwriters must evaluate risk factors from multiple data sources, including client histories, market data, and environmental factors. Generating comprehensive risk assessment reports is time-consuming and prone to variability in quality and completeness. Manual processes delay underwriting decisions and increase operational costs. Existing tools lack automation in synthesizing diverse data into coherent risk narratives. There is a need for an AI-powered report generator that consolidates inputs and produces consistent, detailed risk assessments to support underwriting efficiency and accuracy.
+Data Considerations:
+Requires access to client risk data including claims history, credit scores, environmental reports, and market indicators in structured formats. Data sourced from internal databases and public APIs. Volume varies by portfolio size. Data quality and privacy compliance are critical. Synthetic risk data sets are recommended for development. Preprocessing involves data normalization and integration. Consider using synthetic or anonymized data where appropriate. Ensure data quality and relevance to the problem context.
+SOLUTION EXPECTATIONS
+A web-based AI tool where underwriters input or upload risk data and receive comprehensive AI-generated risk assessment reports. Features include editing capabilities, version control, and export options. The generative AI synthesizes diverse inputs into coherent narratives. Integration with data APIs ensures real-time updates. Success includes 90% report accuracy and 40% time savings. Demonstrations include report generation workflows. Documentation covers usage and integration. Feel free to explore creative solutions that align with the problem context and objectives.
