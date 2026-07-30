@@ -15,18 +15,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  // BYPASS LOGIN: Start with a mock user already set
+  const [user, setUser] = useState<User | null>({ id: 1, username: 'auto_admin' });
 
   useEffect(() => {
+    // Optionally still sync with backend to get the real ID of the auto_admin
     const checkAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const res = await api.get('/auth/me');
-          setUser(res.data);
-        } catch (error) {
-          localStorage.removeItem('token');
-        }
+      try {
+        const res = await api.get('/auth/me');
+        setUser(res.data);
+      } catch (error) {
+        console.warn("Failed to get auto_admin info", error);
       }
     };
     checkAuth();
@@ -39,7 +38,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem('token');
-    setUser(null);
+    // For bypass, we'll just immediately set them back to auto_admin
+    setUser({ id: 1, username: 'auto_admin' });
   };
 
   return (

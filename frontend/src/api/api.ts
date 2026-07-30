@@ -9,6 +9,8 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // If no token exists, the backend is configured to bypass auth anyway,
+  // so we just return the config.
   return config;
 });
 
