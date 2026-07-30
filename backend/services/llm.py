@@ -1,9 +1,18 @@
-from openai import OpenAI
+from langchain_openai import ChatOpenAI
+import os
+import httpx
 from core.config import settings
 
-# Since it's a TCS hosted openai 4o, you typically initialize OpenAI with an alternative base_url if needed
-# We will just use the standard client for now, assuming api_key is configured properly.
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
+# Initialize LangChain LLM with TCS Endpoint configuration
+# We use verify=False as per the provided code snippet
+client = httpx.Client(verify=False)
+llm = ChatOpenAI(
+    base_url="https://genailab.tcs.in",
+    model="azure/genailab-maas-gpt-4o",
+    api_key="sk-ZPM8Bjz6MbqU2bCEh7EjOA", # Using the provided key directly as requested, typically would use settings
+    http_client=client,
+    temperature=0.1,
+)
 
 def generate_report_content(sources_text: str, additional_context: str) -> str:
     system_prompt = """
@@ -27,15 +36,13 @@ Here is the data from the sources:
 Please generate the report.
 """
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
+        # Use Langchain chat model interface
+        response = llm.invoke(
+            [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.2,
-            max_tokens=1500
+            ]
         )
-        return response.choices[0].message.content
+        return response.content
     except Exception as e:
-        return f"Error generating report: {str(e)}\n\n(Ensure your OPENAI_API_KEY is correctly set)"
+        return f"Error generating report: {str(e)}\n\n(Ensure your LLM connection is configured correctly)"

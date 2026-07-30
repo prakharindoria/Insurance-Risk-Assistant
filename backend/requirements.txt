@@ -11,3 +11,4 @@ openai
 reportlab
 python-docx
 markdown
+langchain_openai\nhttpx
