@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+pydantic-settings
+python-multipart
+python-jose[cryptography]
+bcrypt
+openai
+reportlab
+python-docx
+markdown
+langchain_openai
+httpx
