@@ -29,7 +29,7 @@ async def upload_source(
 
     db_source = models.Source(
         filename=file.filename,
-        content_type=file.content_type,
+        content_type=file.content_type if file.content_type else "application/octet-stream",
         content=content,
         owner_id=current_user.id
     )
